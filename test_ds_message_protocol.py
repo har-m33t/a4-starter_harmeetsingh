@@ -63,9 +63,11 @@ class TestDirectMessageFucntions(unittest.TestCase):
         
         invalid_json = "{response: {type: 'ok', messages: ["
         
-        with self.assertRaises(json.JSONDecodeError):
-            extract_direct_message(invalid_json)
-            
+        expected = {}
+
+        self.assertEqual(extract_direct_message(invalid_json), expected)
+
+           
     def test_extract_direct_message_missing_fields(self):
         json_msg = json.dumps({
             "response": {

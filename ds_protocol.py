@@ -132,18 +132,22 @@ def extract_direct_message(json_msg: str) -> dict:
     '''
     
     try:
+        msg_dict = {}
         json_obj = json.loads(json_msg)
         type = json_obj['response']['type']
         messages = json_obj['response']['messages']
         if type == 'ok':
             token = json_obj['response']['token']
-            msg_dict = {}
             for message in messages:
                 msg_dict[message["from"]] = DataTuple(type, message, token)
         else:
             token = None
-    
-        return msg_dict
-     
+         
     except json.JSONDecodeError:
         print("Json cannot be decoded.")
+    
+    except KeyError:
+       print("ERROR: Missing Fields in JSON")
+    
+    finally:
+       return msg_dict
