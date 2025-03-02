@@ -1,7 +1,7 @@
 import unittest
 import json
 from collections import namedtuple
-from ds_protocol import format_direct_msg, extract_direct_message
+from server_client_protocol.ds_protocol import format_direct_msg, extract_direct_message
 
 DataTuple = namedtuple('DataTuple', ['type', 'message', 'token'])
 

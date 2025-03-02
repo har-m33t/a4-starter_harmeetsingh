@@ -7,7 +7,7 @@
 # STUDENT ID
 
 import socket
-from ds_protocol import *
+from server_client_protocol.ds_protocol import *
 
 def send(server: str, port: int, username: str, password: str, message: str, bio: str = None) -> bool:
     """

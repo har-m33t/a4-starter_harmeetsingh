@@ -8,15 +8,12 @@
 # HARMEES2@UCI.EDU
 # 27012171
 
-# Import Necessary Libraries 
+
 from pathlib import Path
 import shlex
-
-# Import Necessary Modules
-from Profile import Profile, Post
-from ds_client import send
-from ui import *
-from admin import admin_main
+from a4_logic.Profile import Profile, Post
+from server_client_protocol.ds_client import send
+from logic.ui import *
 
 
 def read_input()-> list:
@@ -49,7 +46,6 @@ def read_input()-> list:
         print('ERROR: IMPROPER QUOTATION WRAPPING')
         return None
 
-
 def split_input(command_line: str) -> list:
     """
     Splits a command line string into individual tokens, handling quotations properly.
@@ -79,7 +75,6 @@ def split_input(command_line: str) -> list:
     except ValueError:
         print('ERROR: IMPROPER QUOTATION WRAPPING')
         return None
-
 
 def validate_file_command(args: list, expected_args: int, check_suffix: bool = True) -> bool:
     """
@@ -123,7 +118,6 @@ def validate_file_command(args: list, expected_args: int, check_suffix: bool = T
         return False
     return True
 
-
 def validate_create(args: list) -> bool:
     """
     Validates requirements for creating a file.
@@ -163,7 +157,6 @@ def validate_create(args: list) -> bool:
         return False
 
     return True
-
 
 def validate_edit(args: list, profile: Profile=None) -> bool:
     """
@@ -214,7 +207,6 @@ def validate_edit(args: list, profile: Profile=None) -> bool:
 
     return True 
 
-
 def validate_print(args:list) -> bool:
     """
     Validates the requirements for printing profile information.
@@ -262,7 +254,6 @@ def validate_print(args:list) -> bool:
     
     return True 
 
-
 def edit_file(args: list, profile: Profile, profile_path: str) -> bool:
     """
     Edits a profile based on the provided command and updates the profile file.
@@ -294,11 +285,9 @@ def edit_file(args: list, profile: Profile, profile_path: str) -> bool:
     if profile is None or profile_path is None:
         print('ERROR: PROFILE/PATH DOES NOT EXIST')
         return False
-    
     value = args[1]
 
     if value.strip() == '':
-        print('ERROR: Bio/Post cannot be White Space')
         return False
 
     if args[0] == '-usr':
@@ -396,8 +385,7 @@ def print_file(args: list, profile: Profile) -> bool:
     
     print()
     return True
-
-
+    
 def create_file(args: list) -> tuple[Profile, str]:
     """
     Creates a new profile file and saves it, or opens an existing profile file if the path already exists.
@@ -448,16 +436,16 @@ def create_file(args: list) -> tuple[Profile, str]:
         return profile, profile_path
     else:
 
-        username = input('Enter your username: ')
+        username = input()
         
-        password = input('Enter your password: ')
+        password = input()
 
-        dsuserver = input('Enter the server you would like to publish to: ')
+        dsuserver = input()
         
         if username.strip() != '' and password.strip != '':
             user_profile = Profile(username=username, password=password, dsuserver=dsuserver)
         
-        bio = input('Enter your bio (optional): ')
+        bio = input()
         
         if bio.strip() != '':
             user_profile.bio = bio
@@ -469,7 +457,6 @@ def create_file(args: list) -> tuple[Profile, str]:
         user_profile.save_profile(file_path)
 
         return user_profile, file_path
-
 
 def open_file(args: list) -> tuple[Profile, str]:
     """
@@ -510,7 +497,6 @@ def open_file(args: list) -> tuple[Profile, str]:
         print(f"ERROR: EXCEPTION CAUGHT {e}")
         return None, None 
 
-
 def delete_file(args: list) -> bool:
     """
     Deletes the file specified by the argument list.
@@ -545,7 +531,6 @@ def delete_file(args: list) -> bool:
     except Exception as e:
         print(f"ERROR {e}")
         return False
-
 
 def read_file(args: list) -> bool:
     """
@@ -595,7 +580,6 @@ def read_file(args: list) -> bool:
         print(f"ERROR: {e}")
         return False
 
-
 def publish_online_after_edit(args: list, profile:Profile) -> bool:
     """
     Publishes the changes made to a profile (post or bio) to an online server after user confirmation.
@@ -628,17 +612,16 @@ def publish_online_after_edit(args: list, profile:Profile) -> bool:
     answer = ''
     if args[1] == "-addpost":
         while answer not in ('y', 'n'):
-            answer = input('Would you like to publish this post online? (y/n) ')
+            answer = input()
         if answer == 'y':
             messgae = send(server = profile.dsuserver, port = 3001, username = profile.username, password = profile.password, message = args[2])
     elif args[1] == "-bio":
         while answer not in ('y', 'n'):
-            answer = input('Would you like to publish this bio online? (y/n) ')
+            answer = input()
         if answer == 'y':
             message = send(server = profile.dsuserver, port = 3001, username = profile.username, password = profile.password, bio = args[2], message = None)
     
     return message
-
 
 def validate_publish_online(args: list, profile: Profile) -> bool:
     """
@@ -693,7 +676,6 @@ def validate_publish_online(args: list, profile: Profile) -> bool:
 
     return True
 
-
 def publish_online(args: list, profile: Profile) -> bool:
     """
     Publishes a user's post or bio to an online server.
@@ -730,8 +712,7 @@ def publish_online(args: list, profile: Profile) -> bool:
         message = send(server = profile.dsuserver, port = 3001, username = profile.username, password = profile.password, message = profile.get_posts()[ID].entry)
     return message
 
-
-def main(command_line: str =None, profile: Profile = None, profile_path: str = None) -> tuple[Profile, str]:
+def admin_main(command_line: str =None, profile: Profile = None, profile_path: str = None) -> tuple[Profile, str]:
     """
     Main loop for processing user commands related to managing a user profile and interacting with a file system.
 
@@ -843,55 +824,5 @@ def main(command_line: str =None, profile: Profile = None, profile_path: str = N
     
     return profile, profile_path
 
-
-def main_function() -> None:
-    """
-    Main entry point for running the user profile management system.
-
-    This function provides an interactive loop where users can input commands to create, read, edit, delete, and manage their profiles.
-    The loop continues until the user inputs 'Q' to quit. Additionally, the function allows an admin to enter an admin interface with the 'ADMIN' command.
-
-    It interacts with the `print_welcome` function to display a welcome message and the `print_border` function to separate user inputs visually. The `loop` function handles user command input, while `main` processes the commands.
-
-    Flow of Execution:
-        1. Displays a welcome message.
-        2. Prompts the user for a command.
-        3. Processes the command with `main` (handling profile-related tasks).
-        4. Exits if 'Q' is input.
-        5. Provides an option for an admin to access admin controls if 'ADMIN' is input.
-
-    The user profile and profile path are managed throughout the session, and each command affects the profile state.
-
-    Functions and Features:
-        - `print_welcome`: Displays the welcome message.
-        - `print_border`: Prints a visual separator for commands.
-        - `loop`: Handles the continuous input loop for user commands.
-        - `main`: Handles profile-related logic based on the user's commands.
-        - 'Q': Quit the program.
-        - 'ADMIN': Enter the admin interface for further management.
-    
-    Example usage:
-        >>> main_function()  # Initiates the interactive loop with user commands
-
-    Returns:
-        None.
-    """
-
-    print_welcome()
-    profile = None
-    profile_path = None
-    while True:
-        print_border()
-
-        command_line = loop(profile)
-        if command_line == 'Q':
-            break
-        if command_line == 'ADMIN':
-            admin_main()
-            break
-        else:
-            profile, profile_path = main(command_line, profile, profile_path)
-
-
 if __name__ == '__main__':
-    main_function()
+    admin_main()
