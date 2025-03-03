@@ -119,7 +119,7 @@ def format_direct_msg(token: str, direct_msg: str, recipient: str, timestamp: st
     }
   )
 
-def extract_direct_message(json_msg: str) -> dict:
+def extract_direct_message(json_msg: str) -> list:
     '''
     Takes a JSON string and converts it to a DataTuple object containing
     the type, message, and token extracted from the JSON message. It stores it in a message dictionary, where the key is the person who sent it.
@@ -132,16 +132,13 @@ def extract_direct_message(json_msg: str) -> dict:
     '''
     
     try:
-        msg_dict = {}
+        msg_dict = []
         json_obj = json.loads(json_msg)
         type = json_obj['response']['type']
         messages = json_obj['response']['messages']
         if type == 'ok':
-            token = json_obj['response']['token']
             for message in messages:
-                msg_dict[message["from"]] = DataTuple(type, message, token)
-        else:
-            token = None
+                msg_dict.append(message)
          
     except json.JSONDecodeError:
         print("Json cannot be decoded.")
@@ -151,3 +148,11 @@ def extract_direct_message(json_msg: str) -> dict:
     
     finally:
        return msg_dict
+
+def format_msg_request(token: str, message_type: str) -> str:
+  return json.dumps(
+     {
+        "token": token, 
+        "directmessage": message_type
+      }
+      )

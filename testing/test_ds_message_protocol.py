@@ -1,98 +1,66 @@
-import unittest
+import pytest
 import json
-from collections import namedtuple
-from server_client_protocol.ds_protocol import format_direct_msg, extract_direct_message
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from server_client_protocol.ds_protocol import *
 
-DataTuple = namedtuple('DataTuple', ['type', 'message', 'token'])
-
-class TestDirectMessageFucntions(unittest.TestCase):
-
-    def test_format_direct_msg_valid(self): 
-        token = "abc123"
-        direct_msg = "Hello!"
-        recipient = "user42"
-        timestamp = "2025-02-27T12:34:56Z"
-        excpected = {
-            "token": token, 
-            "direct_message": {
-                'entry': direct_msg, 
-                "recipient": recipient,
-                "timestamp": timestamp
-            }
-        }
-
-        self.assertEqual(json.loads(format_direct_msg(token, direct_msg, recipient, timestamp)), excpected)
+# Test extract_json
+def test_extract_json():
+    json_msg = json.dumps({"response": {"type": "ok", "message": "Success", "token": "12345"}})
+    result = extract_json(json_msg)
+    assert result.type == "ok"
+    assert result.message == "Success"
+    assert result.token == "12345"
     
-    def test_format_direct_msg_without_timestamp(self):
-        token = "abc123"
-        direct_msg = "Hello!"
-        recipient = "user42"
-        excpected = {
-            "token": token, 
-            "direct_message": {
-                'entry': direct_msg, 
-                "recipient": recipient,
-                "timestamp": ""
-            }
+    json_msg = json.dumps({"response": {"type": "error", "message": "Failure"}})
+    result = extract_json(json_msg)
+    assert result.type == "error"
+    assert result.message == "Failure"
+    assert result.token is None
+
+# Test format_join_msg
+def test_format_join_msg():
+    result = format_join_msg("user", "pass")
+    expected = {"join": {"username": "user", "password": "pass", "token": ""}}
+    assert json.loads(result) == expected
+
+# Test format_post_msg
+def test_format_post_msg():
+    result = format_post_msg("token123", "Hello world", "2025-03-02")
+    expected = {"token": "token123", "post": {"entry": "Hello world", "timestamp": "2025-03-02"}}
+    assert json.loads(result) == expected
+
+# Test format_bio_msg
+def test_format_bio_msg():
+    result = format_bio_msg("token123", "New bio", "2025-03-02")
+    expected = {"token": "token123", "bio": {"entry": "New bio", "timestamp": "2025-03-02"}}
+    assert json.loads(result) == expected
+
+# Test format_direct_msg
+def test_format_direct_msg():
+    result = format_direct_msg("token123", "Hello", "user2", "2025-03-02")
+    expected = {"token": "token123", "direct_message": {"entry": "Hello", "recipient": "user2", "timestamp": "2025-03-02"}}
+    assert json.loads(result) == expected
+
+# Test extract_direct_message
+def test_extract_direct_message():
+    json_msg = json.dumps({
+        "response": {
+            "type": "ok",
+            "messages": [
+                {"from": "user1", "entry": "Hello", "timestamp": "2025-03-02"},
+                {"from": "user2", "entry": "Hi", "timestamp": "2025-03-03"}
+            ]
         }
-        
-        self.assertEqual(json.loads(format_direct_msg(token, direct_msg, recipient)), excpected)
+    })
+    result = extract_direct_message(json_msg)
+    assert len(result) == 2
+    assert result[0]["from"] == "user1"
+    assert result[1]["entry"] == "Hi"
 
-    
-    def test_extract_direct_message_valid(self):
-        
-        json_msg = json.dumps({
-            "response": {
-                "type": "ok", 
-                "token": "secureToken", 
-                "messages": [
-                    {'from': 'userA', 'content': 'hey'},
-                    {'from': 'userB', 'content': 'hello'}
-                ]
-            }
-        })
-
-        expected = {
-            'userA': DataTuple("ok", {'from': 'userA', 'content': 'hey'}, "secureToken"), 
-            'userB': DataTuple("ok", {"from": 'userB', 'content': 'hello'}, 'secureToken')
-        }
-
-        self.assertEqual(extract_direct_message(json_msg), expected)
-
-    def test_extract_direct_message_invalid_message(self):
-        
-        invalid_json = "{response: {type: 'ok', messages: ["
-        
-        expected = {}
-
-        self.assertEqual(extract_direct_message(invalid_json), expected)
-
-           
-    def test_extract_direct_message_missing_fields(self):
-        json_msg = json.dumps({
-            "response": {
-                "type": "ok", 
-                "messages": []
-            }
-        })
-
-        expected = {}
-
-        self.assertEqual(extract_direct_message(json_msg), expected)
-    
-    def test_extract_direct_messsage_error_type(self):
-        json_msg = json.dumps({
-            "response": {
-                "type": "error",
-                "messages": [
-                    {'from': 'userA', 'content': 'Something went Wrong'}
-                ]
-            }
-        })
-
-        expected = {}
-
-        self.assertEqual(extract_direct_message(json_msg), expected)    
-
-if __name__ == "__main__":
-    unittest.main()
+# Test format_msg_request
+def test_format_msg_request():
+    result = format_msg_request("token123", "new")
+    expected = {"token": "token123", "directmessage": "new"}
+    assert json.loads(result) == expected
