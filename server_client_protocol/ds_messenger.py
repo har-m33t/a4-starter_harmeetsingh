@@ -1,6 +1,5 @@
 import socket
 from server_client_protocol.ds_protocol import *
-import json
 
 class DirectMessage:
     def __init__(self, recipient, message, timestamp):
