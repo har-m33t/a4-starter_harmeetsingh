@@ -111,7 +111,7 @@ def format_direct_msg(token: str, direct_msg: str, recipient: str, timestamp: st
   return json.dumps(
     {
       'token': token, 
-      'direct_message': {
+      'directmessage': {
         'entry': direct_msg,
         'recipient': recipient, 
         'timestamp': timestamp 
