@@ -100,6 +100,8 @@ class Profile:
         self.password = password # REQUIRED
         self.bio = ''            # OPTIONAL
         self._posts = []         # OPTIONAL
+        self.friends = []
+        self.messages = []
     
     """
 
@@ -139,6 +141,13 @@ class Profile:
     """
     def get_posts(self) -> list[Post]:
         return self._posts
+    
+    def add_message(self, message: dict) -> None:
+        self.messages.append(message)
+    
+    def add_friend(self, friend_username: str) -> None:
+        if friend_username not in self.friends:
+            self.friends.append(friend_username)
 
     """
 
