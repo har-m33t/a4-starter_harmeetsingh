@@ -385,6 +385,8 @@ class MainApp(tk.Frame):
         except Exception as e:
             tk.messagebox.showerror('File Opening Error', f'Failed to Open File: {e}')
     
+    def close_program(self):
+        sys.exit()
 
     def _draw(self):
         # Build a menu and add it to the root frame.
@@ -395,7 +397,7 @@ class MainApp(tk.Frame):
         menu_bar.add_cascade(menu=menu_file, label='File')
         menu_file.add_command(label='New', command=self.create_file)
         menu_file.add_command(label='Open...', command = self.open_file)
-        menu_file.add_command(label='Close')
+        menu_file.add_command(label='Close', command = self.close_program)
 
         settings_file = tk.Menu(menu_bar)
         menu_bar.add_cascade(menu=settings_file, label='Settings')
