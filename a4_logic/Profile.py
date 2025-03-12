@@ -150,6 +150,9 @@ class Profile:
         if friend_username not in self.friends:
             self.friends.append(friend_username)
 
+    def get_messages_for_recipient(self, recipient: str) -> list[dict]:
+        return [msg for msg in self.messages if msg['recipient'] == recipient]
+
     """
 
     save_profile accepts an existing dsu file to save the current instance of Profile 
@@ -201,6 +204,7 @@ class Profile:
                 self.dsuserver = obj['dsuserver']
                 self.bio = obj['bio']
                 self.friends = obj['friends']
+                self.messages = obj['messages']
                 for post_obj in obj['_posts']:
                     post = Post(post_obj['entry'], post_obj['timestamp'])
                     self._posts.append(post)

@@ -1,1 +1,1 @@
-{"dsuserver": "localhost", "username": "test2", "password": "test2", "bio": "", "_posts": [], "friends": ["test1"], "messages": []}
+{"dsuserver": "localhost", "username": "test2", "password": "test2", "bio": "", "_posts": [], "friends": ["test1"], "messages": [{"recipient": "test1", "message": "Heyyyy", "from_user": true, "timestamp": 1741760067.0758774}, {"recipient": "test1", "message": "Hallo", "from_user": false, "timestamp": 1741760076.0084243}]}

@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog
 from typing import Text
+import time
 
 import sys
 import os
@@ -9,7 +10,9 @@ from server_client_protocol.ds_messenger import DirectMessenger, DirectMessage
 
 from a4_logic.Profile import Profile, Path
 
-#TODO Use Profile to Store Convo History when Server Doesn't run
+import socket
+
+import sv_ttk
 
 class Body(tk.Frame):
     def __init__(self, root, recipient_selected_callback=None):
@@ -173,8 +176,6 @@ class NewContactDialog(tk.simpledialog.Dialog):
         self.password_entry.pack()
         self.password_entry['show'] = '*'
 
-
-
     def apply(self):
         self.user = self.username_entry.get()
         self.pwd = self.password_entry.get()
@@ -199,28 +200,61 @@ class MainApp(tk.Frame):
         self._draw()
         self.body.insert_contact("studentexw23") # adding one example student.
 
+    
+    def is_server_running(self, host = 'localhost', port = 3001, timeout=2) -> bool:
+        """Checks if a server is running at the given host and port."""
+        try:
+            with socket.create_connection((host, port), timeout=timeout):
+                return True
+        except (socket.timeout, ConnectionRefusedError):
+            return False
+        
     def send_message(self): # WORKS 
         # You must implement this!
+        if not self.direct_messenger:
+            tk.messagebox.showerror("Error", "DirectMessenger instance is not initialized.")
+            return
+        if not self.recipient:
+            tk.messagebox.showerror("Error", "No recipient selected. Please choose a contact.")
+            return
+        if not self.is_server_running():
+            tk.messagebox.showerror("Server Error", "Unable to connect. The server is not running.")
+            return
         message = self.body.get_text_entry()
-        if message and self.recipient and self.direct_messenger:
+        if not message:
+            tk.messagebox.showerror("Error", "Cannot send an empty message.")
+            return
+        try:
             self.publish(message)
             self.body.insert_user_message(f"{message}")
             self.body.set_text_entry("")
-        else:
-            if not self.direct_messenger:
-                print('direct_messenger not made yet')
-            elif not self.recipient: 
-                print('self.recipent is not made yet')
+
+            self.profile.add_message(
+                {
+                    'recipient': self.recipient,
+                    'message': message, 
+                    'from_user': True,
+                    'timestamp': time.time()
+                }
+            )
+            self.profile.save_profile(self.filepath)
+        except Exception as e:
+            tk.messagebox.showerror("Message Error", f"Failed to send message: {e}")
 
     def add_contact(self): 
         # You must implement this!
         # Hint: check how to use tk.simpledialog.askstring to retrieve
         # the name of the new contact, and then use one of the body
         # methods to add the contact to your contact list
+        if not self.is_server_running():
+            tk.messagebox.showerror("Server Error", "Unable to connect. The server is not running.")
+            return
         contact = simpledialog.askstring('Add Contact', "Enter Contact Name:")
-        if contact:
-            self.body.insert_contact(contact)
-
+        if not contact:
+            tk.messagebox.showerror("Error", "Contact name cannot be empty.")
+            return
+        
+        self.body.insert_contact(contact)
         self.profile.add_friend(contact)
         self.profile.save_profile(self.filepath)
     
@@ -229,13 +263,20 @@ class MainApp(tk.Frame):
             self.body.insert_contact(contact)
 
     def recipient_selected(self, recipient):
-        print(f'Recipient selected: {recipient}')
         self.recipient = recipient
         self.body._reset_entry_box()
         self.body._reset_message_box()
-        messages = self.direct_messenger.retrieve_all()
-        self.body._insert_all_msgs(messages, self.recipient)
+        try: 
+            messages = self.profile.get_messages_for_recipient(recipient)
+            for msg in messages:
+                if msg['from_user']:
+                    self.body.insert_user_message(msg['message'])
+                else:
+                    self.body.insert_contact_message(msg['message'])
+        except AttributeError:
+            tk.messagebox.showerror('Profile Error', 'No Profile Currently Open')
 
+                
     def configure_server(self):
         '''Create an Account'''
         ud = NewContactDialog(self.root, "Configure Account",
@@ -243,79 +284,106 @@ class MainApp(tk.Frame):
         self.username = ud.user
         self.password = ud.pwd
         self.server = ud.server
+        if not self.username:
+            tk.messagebox.showerror('Configuration Error', 'Cannot Leave Username Empty')
+            return
+        if not self.password:
+            tk.messagebox.showerror('Configuration Error', 'Cannot Leave Password Empty')
+            return 
+        if not self.server:
+            tk.messagebox.showerror('Configuration Error', 'Cannot Leave Server Empty')
+            return
+
         # You must implement this!
         # You must configure and instantiate your
         # DirectMessenger instance after this line.
-
+        if not self.is_server_running():
+            tk.messagebox.showerror("Server Error", "Unable to connect. The server is not running.")
+            return
         # Initialize DirectMessenger with validated server
-        self.direct_messenger = DirectMessenger(self.server, self.username, self.password)
-        if self.direct_messenger:
-            print('DirectMessenger Intialized')
-        print(f"Connected to server: {self.server}")
+        try:
+            self.direct_messenger = DirectMessenger(self.server, self.username, self.password)
+            if self.direct_messenger:
+                print('DirectMessenger Intialized')
+            print(f"Connected to server: {self.server}")
 
-        print('Creating Profile')
-        self.profile = Profile(dsuserver=self.server, username=self.username, password=self.password)
+            print('Creating Profile')
+            self.profile = Profile(dsuserver=self.server, username=self.username, password=self.password)
 
-        self.body._reset_ui()
+            self.body._reset_ui()
+        except Exception as e:
+            tk.messagebox.showerror("Configuration Error", f"Failed to configure server: {e}")    
 
 
     def publish(self, message:str):
         # You must implement this!
-        if self.direct_messenger and self.recipient:
-            self.direct_messenger.send(message, self.recipient)
-
-        else:
-            if not self.direct_messenger:
-                print('direct_messenger not made yet')
-            elif not self.recipient: 
-                print('self.recipent is not made yet')
-
+        try:
+            if self.direct_messenger and self.recipient:
+                self.direct_messenger.send(message, self.recipient)
+        except Exception as e:
+            tk.messagebox.showerror("Publish Error", f"Failed to send message {e}")
 
     def check_new(self):
         # You must implement this!
         if self.direct_messenger:
-            messages = self.direct_messenger.retrieve_new()
-            for msg in messages:
-                self.body.insert_contact_message(f"{msg.message}")
-        else:
-            print('direct_messenger not made yet')
+            try:
+                messages = self.direct_messenger.retrieve_new()
+                for msg in messages:
+                    self.body.insert_contact_message(f"{msg.message}")
+                    self.profile.add_message(
+                        {
+                            'recipient': msg.sender,
+                            'message': msg.message, 
+                            'from_user': False,
+                            'timestamp': time.time()
+                        }
+                    )
+                    self.profile.save_profile(self.filepath)
+            except Exception as e:
+                tk.messagebox.showerror("Publish Error", f"Failed to send message {e}")
         
         self.root.after(2000, self.check_new) 
     
     def create_file(self):
-        filepath = filedialog.asksaveasfilename() + '.dsu'
-        self.filepath = Path(filepath)
-        self.filepath.touch()
+        try:
+            filepath = filedialog.asksaveasfilename() + '.dsu'
+            self.filepath = Path(filepath)
+            self.filepath.touch()
 
-        self.username = '' # Reset All Values for Server Configuration 
-        self.password = ''
-        self.server = ''
-        self.recipient = ''
-        self.direct_messenger = None
+            self.username = '' # Reset All Values for Server Configuration 
+            self.password = ''
+            self.server = ''
+            self.recipient = ''
+            self.direct_messenger = None
 
-        self.configure_server()
-        self.profile.save_profile(self.filepath)
+            self.configure_server()
+            self.profile.save_profile(self.filepath)
+        except Exception as e:
+            tk.messagebox.showerror('File Creation Error', f'Failed to Create File: {e}')
 
     
     def open_file(self):
-        filepath = filedialog.askopenfilename()
-        if not filepath:
-            return 
-        
-        self.body._reset_ui()
+        try:
+            filepath = filedialog.askopenfilename()
+            if not filepath:
+                return 
+            
+            self.body._reset_ui()
 
-        self.filepath = Path(filepath)
-        self.profile = Profile()
-        self.profile.load_profile(self.filepath)
+            self.filepath = Path(filepath)
+            self.profile = Profile()
+            self.profile.load_profile(self.filepath)
 
-        self.username = self.profile.username
-        self.password = self.profile.password
-        self.server = self.profile.dsuserver
+            self.username = self.profile.username
+            self.password = self.profile.password
+            self.server = self.profile.dsuserver
 
-        self.direct_messenger = DirectMessenger(self.server, self.username, self.password)
-        
-        print(self.profile.friends)
-        self.retrive_contacts()
+            self.direct_messenger = DirectMessenger(self.server, self.username, self.password)
+            
+            print(self.profile.friends)
+            self.retrive_contacts()
+        except Exception as e:
+            tk.messagebox.showerror('File Opening Error', f'Failed to Open File: {e}')
     
 
     def _draw(self):
@@ -346,9 +414,9 @@ class MainApp(tk.Frame):
 
 
 if __name__ == "__main__":
-    testing = True
+    double = False
 
-    if testing == False:
+    if double == False:
         # All Tkinter programs start with a root window. We will name ours 'main'.
         main = tk.Tk()
 
@@ -363,6 +431,11 @@ if __name__ == "__main__":
         # some modern OSes don't support. If you're curious, feel free to comment
         # out and see how the menu changes.
         main.option_add('*tearOff', False)
+        
+        style = ttk.Style()
+        style.theme_use('clam')
+
+        sv_ttk.set_theme('dark')
 
         # Initialize the MainApp class, which is the starting point for the
         # widgets used in the program. All of the classes that we use,
