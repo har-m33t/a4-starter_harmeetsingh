@@ -30,13 +30,17 @@ def extract_json(json_msg:str) -> DataTuple[str, str, str]:
     type = json_obj['response']['type']
     message = json_obj['response']['message']
     if type == 'ok':
-      token = json_obj['response']['token']
+      try: 
+        token = json_obj['response']['token']
+      except Exception as e:
+         token = None
     else:
       token = None
   except json.JSONDecodeError:
     print("Json cannot be decoded.")
 
   return DataTuple(type, message, token)
+
 
 def format_join_msg(username: str, password: str) -> str:
     '''

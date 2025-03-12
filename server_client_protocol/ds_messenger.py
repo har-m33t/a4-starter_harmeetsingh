@@ -1,13 +1,18 @@
 import socket
 import json
 import datetime
+
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from server_client_protocol.ds_protocol import *
 
 class DirectMessage:
-    def __init__(self, sender, message, timestamp):
+    def __init__(self, sender, message, timestamp, from_user):
         self.sender = sender
         self.message = message
         self.timestamp = timestamp
+        self._from_user = from_user
 
 class DirectMessenger:
     def __init__(self, dsuserver=None, username=None, password=None):
@@ -43,22 +48,27 @@ class DirectMessenger:
                     timestamp = str(datetime.datetime.now().timestamp())  # Generate timestamp
                     print(f'Sending message: "{message}" to {recipient}')
                     
-                    direct_msg = format_direct_msg(self.token, message, recipient, timestamp)
+                    direct_msg = format_direct_msg(token = self.token, direct_msg=message, recipient=recipient, timestamp=timestamp)
+
                     send_file.write(direct_msg + '\r\n')
+
                     send_file.flush()
-    
+
                     resp = recv_file.readline().strip()
-                    response = extract_json(resp)
+
+                    response = extract_json(resp) # ERROR HERE
+
                     if response.type != "ok":
                         print("Error:", response.message)
                         return False
                     else:
                         print("Message sent successfully!")
                         return True
-        
+                        
         except Exception as e:
             print(f'An unexpected error occurred: {e}')
             return False
+        
 
     def retrieve_messages(self, message_type: str) -> list:
         """ Retrieves messages of the specified type ('new' or 'all'). """
@@ -91,7 +101,14 @@ class DirectMessenger:
                 resp = recv_file.readline().strip()
                 messages = extract_direct_message(resp)
                 
-                direct_messages = [DirectMessage(msg['from'], msg['message'], msg['timestamp']) for msg in messages] if messages else []
+                #TODO Account for Messages You Sent 
+                direct_messages = []
+                for msg in messages:
+                    if 'recipient' in msg.keys():
+                        direct_messages.append(DirectMessage(msg['recipient'], msg['message'], msg['timestamp'], True))
+                    elif 'from' in msg.keys():
+                        direct_messages.append(DirectMessage(msg['from'], msg['message'], msg['timestamp'], False))
+                
                 return direct_messages
 
         except Exception as e:

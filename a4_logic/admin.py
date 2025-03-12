@@ -11,9 +11,12 @@
 
 from pathlib import Path
 import shlex
-from a4_logic.Profile import Profile, Post
+from Profile import Profile, Post
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from server_client_protocol.ds_client import send
-from logic.ui import *
+from ui import *
 
 
 def read_input()-> list:

@@ -13,10 +13,13 @@ from pathlib import Path
 import shlex
 
 # Import Necessary Modules
-from a4_logic.Profile import Profile, Post
+from Profile import Profile, Post
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from server_client_protocol.ds_client import send
-from a4_logic.ui import *
-from a4_logic.admin import admin_main
+from ui import *
+from admin import admin_main
 
 
 def read_input()-> list:

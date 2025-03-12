@@ -198,7 +198,6 @@ class DSUServer:
                                 #timestamp = args['timestamp']
                                 timestamp = str((datetime.now().timestamp()))
                                 entry = args['entry']
-                                print(token, current_user_token, self.sessions)
                                 if token == current_user_token and token in self.sessions:
                                     current_user = self.sessions[token]
                                     direct_message_sent = True
@@ -267,13 +266,8 @@ class DSUServer:
             with users_path.open('r') as user_file:
                 existing_users = json.load(user_file)
             
-            print(existing_users) # DEBUG Output
-
             fetched_sender = existing_users.get(username, None)
             fetched_user = existing_users.get(recipient, None)
-
-            print(fetched_sender)
-            print(fetched_user)
 
             if not fetched_sender:
                 return False

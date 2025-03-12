@@ -9,9 +9,9 @@
 # harmees2
 # 27012171
 
-from logic.a4 import main
-from a4_logic.admin import admin_main
-from a4_logic.Profile import Profile
+from a4 import main
+from admin import admin_main
+from Profile import Profile
 
 
 def print_welcome():

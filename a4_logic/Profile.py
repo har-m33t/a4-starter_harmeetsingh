@@ -143,6 +143,7 @@ class Profile:
         return self._posts
     
     def add_message(self, message: dict) -> None:
+        #TODO Differentiate between messages
         self.messages.append(message)
     
     def add_friend(self, friend_username: str) -> None:
@@ -199,6 +200,7 @@ class Profile:
                 self.password = obj['password']
                 self.dsuserver = obj['dsuserver']
                 self.bio = obj['bio']
+                self.friends = obj['friends']
                 for post_obj in obj['_posts']:
                     post = Post(post_obj['entry'], post_obj['timestamp'])
                     self._posts.append(post)
