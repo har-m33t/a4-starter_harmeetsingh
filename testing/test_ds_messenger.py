@@ -1,6 +1,6 @@
 import pytest
 import json
-from unittest.mock import patch, Mock
+import socket
 
 import sys
 import os
@@ -9,75 +9,107 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 from server_client_protocol.ds_protocol import *
 from server_client_protocol.ds_messenger import DirectMessenger, DirectMessage
 
-# Mock responses for different scenarios
-MOCK_SUCCESS_AUTH = json.dumps({"response": {"type": "ok", "message": "Authenticated"}})
-MOCK_FAILED_AUTH = json.dumps({"response": {"type": "error", "message": "Authentication failed"}})
-MOCK_SUCCESS_SEND = json.dumps({"response": {"type": "ok", "message": "Message sent"}})
-MOCK_FAILED_SEND = json.dumps({"response": {"type": "error", "message": "Failed to send"}})
-MOCK_MESSAGES = json.dumps({
-    "response": {"type": "ok", "messages": [
-        {"sender": "alice", "recipient": "bob", "entry": "Hello Bob!", "timestamp": "2025-03-03T12:00:00"},
-        {"sender": "charlie", "recipient": "bob", "entry": "How's it going?", "timestamp": "2025-03-03T12:05:00"}
-    ]}
-})
-MOCK_EMPTY_MESSAGES = json.dumps({"response": {"type": "ok", "messages": []}})
-MOCK_NETWORK_FAILURE = json.dumps({"response": {"type": "error", "message": "Network failure"}})
+class ServerNotRunningError(Exception):
+    pass
 
-@pytest.fixture
-def mock_messenger():
-    """Mocked DirectMessenger instance."""
-    messenger = Mock()
+def is_server_running(host = 'localhost', port = 3001, timeout=2) -> bool:
+    """Checks if a server is running at the given host and port."""
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            print('Server Running')
+            return True
+    except (socket.timeout, ConnectionRefusedError):
+        raise ServerNotRunningError('Server must be running to execute tests')
+
+def test_DirectMessage_instance():
+    msg = DirectMessage('sender', 'message', 'time_stamp', True)
+    assert msg.sender == 'sender'
+    assert msg.message == 'message'
+    assert msg.timestamp == 'time_stamp'
+    assert msg._from_user == True
+
+def test_DirectMessenger_instance():
+    direct_msgr = DirectMessenger('localhost', 'test1', 'test1')
+    assert direct_msgr.token == None   
+    assert direct_msgr.username == 'test1'
+    assert direct_msgr.dsuserver == 'localhost'
+    assert direct_msgr.password == 'test1'
+    assert direct_msgr.port == 3001
+
+def test_DirectMessenger_send():
     
-    # Mock authentication
-    messenger.authenticate.side_effect = lambda user, pwd: user == "user" and pwd == "pass"
+    is_server_running()
 
-    # Mock send function
-    messenger.send.side_effect = lambda msg, recipient: bool(msg and recipient)  # False if empty
+    direct_msgr = DirectMessenger('localhost', 'test1', 'test1')
+    result = direct_msgr.send('TESTING', 'test2')
+    assert result is True
 
-    # Mock retrieve_all and retrieve_new
-    messenger.retrieve_all.return_value = json.loads(MOCK_MESSAGES)["response"]["messages"]
-    messenger.retrieve_new.return_value = json.loads(MOCK_MESSAGES)["response"]["messages"]
+    invalid_direct_msgr = DirectMessenger('localhost', 'test1', 'test2')
+    result = invalid_direct_msgr.send('TESTING', 'test2')
+    assert result is False
 
-    return messenger
+    direct_msgr = DirectMessenger('localhost', 'test1', 'test1')
+    result = direct_msgr.send('TESTING', '_test2')
+    assert result is False
 
-def test_successful_auth(mock_messenger):
-    """Test successful authentication."""
-    assert mock_messenger.authenticate("user", "pass") is True
+    invalid_server = DirectMessenger('local_host', 'test1', 'test1')
+    result = invalid_server.send('TESTING', 'test2')
+    assert result is False
 
-def test_failed_auth(mock_messenger):
-    """Test failed authentication."""
-    assert mock_messenger.authenticate("user", "wrongpass") is False
+def test_DirectMessenger_retrieve_messages():
+    
+    is_server_running()
+    direct_msgr = DirectMessenger('localhost', 'test1', 'test1')
+    all_messages = direct_msgr.retrieve_messages('all')
+    assert isinstance(all_messages, list)
+    if all_messages:
+        assert isinstance(all_messages[0], DirectMessage)
 
-def test_successful_message_send(mock_messenger):
-    """Test successful message sending."""
-    assert mock_messenger.send("Hello!", "alice") is True
+    direct_msgr = DirectMessenger('localhost', 'test1', 'test1')
+    new_messages = direct_msgr.retrieve_messages('new')
+    assert isinstance(new_messages, list)
+    if new_messages:
+        assert isinstance(new_messages[0], DirectMessage)
+    
 
-def test_failed_message_send(mock_messenger):
-    """Test failed message sending (empty message)."""
-    assert mock_messenger.send("", "alice") is False
+def test_DirectMessenger_retrieve_all():
+    
+    direct_msgr = DirectMessenger('localhost', 'test1', 'test1')
+    all_messages = direct_msgr.retrieve_all()
+    assert isinstance(all_messages, list)
+    if all_messages:
+        assert isinstance(all_messages[0], DirectMessage)
 
-def test_retrieve_all_messages(mock_messenger):
-    """Test retrieving all messages successfully."""
-    messages = mock_messenger.retrieve_all()
-    assert len(messages) == 2
-    assert messages[0]["entry"] == "Hello Bob!"
-    assert messages[1]["sender"] == "charlie"
+def test_DirectMessenger_retrieve_new():
+    
+    direct_msgr = DirectMessenger('localhost', 'test1', 'test1')
+    new_messages = direct_msgr.retrieve_new()
+    assert isinstance(new_messages, list)
+    if new_messages:
+        assert isinstance(new_messages[0], DirectMessage)
 
-def test_retrieve_new_messages(mock_messenger):
-    """Test retrieving new messages."""
-    messages = mock_messenger.retrieve_new()
-    assert len(messages) == 2
-    assert messages[0]["entry"] == "Hello Bob!"
-    assert messages[1]["sender"] == "charlie"
+def test_DirectMessenger_retrieve_messages_invalid_profile():
+    
+    direct_msgr = DirectMessenger('localhost', '_test1', 'test1')
+    messages = direct_msgr.retrieve_messages('all')
+    assert messages == []
 
-def test_empty_message(mock_messenger):
-    """Test sending an empty message."""
-    assert mock_messenger.send("", "alice") is False
+def test_DirectMessenger_retrieve_messages_invalid_password():
 
-def test_empty_recipient(mock_messenger):
-    """Test sending a message with an empty recipient."""
-    assert mock_messenger.send("Hello!", "") is False
+    direct_msgr = DirectMessenger('localhost', 'test1', '_test1')
+    messages = direct_msgr.retrieve_messages('all')
+    assert messages == []
 
+def test_DirectMessenger_retrieve_messages_invalid_server():
+
+    direct_msgr = DirectMessenger('local_host', 'test1', 'test1')
+    messages = direct_msgr.retrieve_messages('all')
+    assert messages == []
+        
 '''
-pytest test_ds_messenger.py -v
+pytest testing/test_ds_messenger.py
+
+coverage run -m pytest
+
+coverage report -m
 '''

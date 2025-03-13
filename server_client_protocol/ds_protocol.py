@@ -36,10 +36,11 @@ def extract_json(json_msg:str) -> DataTuple[str, str, str]:
          token = None
     else:
       token = None
+    return DataTuple(type, message, token)
+  
   except json.JSONDecodeError:
     print("Json cannot be decoded.")
-
-  return DataTuple(type, message, token)
+    return None
 
 
 def format_join_msg(username: str, password: str) -> str:
@@ -136,13 +137,13 @@ def extract_direct_message(json_msg: str) -> list:
     '''
     
     try:
-        msg_dict = []
+        msgs = []
         json_obj = json.loads(json_msg)
         type = json_obj['response']['type']
         messages = json_obj['response']['messages']
-        if type == 'ok':
+        if type == 'ok' and messages:
             for message in messages:
-                msg_dict.append(message)
+                msgs.append(message)
          
     except json.JSONDecodeError:
         print("Json cannot be decoded.")
@@ -151,7 +152,7 @@ def extract_direct_message(json_msg: str) -> list:
        print("ERROR: Missing Fields in JSON")
     
     finally:
-       return msg_dict
+       return msgs
 
 def format_msg_request(token: str, message_type: str) -> str:
   return json.dumps(

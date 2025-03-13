@@ -56,7 +56,7 @@ class DirectMessenger:
 
                     resp = recv_file.readline().strip()
 
-                    response = extract_json(resp) # ERROR HERE
+                    response = extract_json(resp)
 
                     if response.type != "ok":
                         print("Error:", response.message)
@@ -85,6 +85,8 @@ class DirectMessenger:
                 
                 resp = recv_file.readline().strip()
                 response = extract_json(resp)
+                
+                
                 if response.type != "ok":
                     print("Error:", response.message)
                     return []
@@ -101,7 +103,6 @@ class DirectMessenger:
                 resp = recv_file.readline().strip()
                 messages = extract_direct_message(resp)
                 
-                #TODO Account for Messages You Sent 
                 direct_messages = []
                 for msg in messages:
                     if 'recipient' in msg.keys():

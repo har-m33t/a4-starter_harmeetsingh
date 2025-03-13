@@ -19,6 +19,16 @@ def test_extract_json():
     assert result.message == "Failure"
     assert result.token is None
 
+    json_msg = '{"response": "type": "ok", "message": "Success", "token": ""}}' # FAULTY JSON MSG
+    result = extract_json(json_msg)
+    assert result is None
+
+    json_msg = json.dumps({"response": {"type": "ok", "message": "Success"}})
+    result = extract_json(json_msg)
+    assert result.token is None
+    assert result.type == "ok"
+    assert result.message == "Success"
+
 # Test format_join_msg
 def test_format_join_msg():
     result = format_join_msg("user", "pass")
@@ -40,7 +50,7 @@ def test_format_bio_msg():
 # Test format_direct_msg
 def test_format_direct_msg():
     result = format_direct_msg("token123", "Hello", "user2", "2025-03-02")
-    expected = {"token": "token123", "direct_message": {"entry": "Hello", "recipient": "user2", "timestamp": "2025-03-02"}}
+    expected = {"token": "token123", "directmessage": {"entry": "Hello", "recipient": "user2", "timestamp": "2025-03-02"}}
     assert json.loads(result) == expected
 
 # Test extract_direct_message
@@ -58,6 +68,30 @@ def test_extract_direct_message():
     assert len(result) == 2
     assert result[0]["from"] == "user1"
     assert result[1]["entry"] == "Hi"
+
+    json_msg = json.dumps({
+        "response": {
+            "type": "error",
+            "messages": []
+        }
+    })
+    result = extract_direct_message(json_msg)
+    assert result == []
+
+    json_msg = json.dumps({
+        "response": {
+            "type": "error"
+            }
+    })
+    result = extract_direct_message(json_msg)
+    assert result == []
+    
+    json_msg = '"response": {"type": "ok","messages": ["from": "user1", "entry": "Hello", "timestamp": "2025-03-02"},{"from": "user2", "entry": "Hi", "timestamp": "2025-03-03"}]}'
+    result = extract_direct_message(json_msg)
+    assert result == []
+    
+
+
 
 # Test format_msg_request
 def test_format_msg_request():

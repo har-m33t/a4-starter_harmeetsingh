@@ -251,9 +251,12 @@ class MainApp(tk.Frame):
             return
         contact = simpledialog.askstring('Add Contact', "Enter Contact Name:")
         if not contact:
-            tk.messagebox.showerror("Error", "Contact name cannot be empty.")
+            tk.messagebox.showerror("Contact Error", "Contact name cannot be empty.")
             return
-        
+        if contact == self.username:
+            tk.messagebox.showerror("Contact Error", "Contact cannot be yourself")
+            return
+
         self.body.insert_contact(contact)
         self.profile.add_friend(contact)
         self.profile.save_profile(self.filepath)
