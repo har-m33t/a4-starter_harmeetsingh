@@ -8,7 +8,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from server_client_protocol.ds_messenger import DirectMessenger, DirectMessage
 
-from a4_logic.Profile import Profile, Path
+from GUI.Profile import Profile, Path
 
 import socket
 
