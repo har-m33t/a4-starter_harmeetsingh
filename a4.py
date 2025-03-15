@@ -3,6 +3,11 @@ This module implements a GUI-based distributed
 social messenger application using Tkinter.
 It allows users to send and receive messages,
 manage contacts, and configure server settings.
+
+Author: Harmeet Singh
+Email: harmees2
+Student ID: 27012171
+
 """
 
 import sys
