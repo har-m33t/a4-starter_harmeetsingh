@@ -38,16 +38,20 @@ class Body(tk.Frame):
         self._select_callback = recipient_selected_callback
         self._draw()
 
-    def node_select(self):
+    def node_select(self, event):
         """
         Handle the selection of a contact in the contact list.
         """
-        selected_item = self.posts_tree.selection()
-        if selected_item:
-            item_id = selected_item[0]
-            contact_name = self.posts_tree.item(item_id, "text")
-            if self._select_callback is not None:
-                self._select_callback(contact_name)
+        try:
+            print(event)
+            selected_item = self.posts_tree.selection()
+            if selected_item:
+                item_id = selected_item[0]
+                contact_name = self.posts_tree.item(item_id, "text")
+                if self._select_callback is not None:
+                    self._select_callback(contact_name)
+        except IndexError:
+            pass
 
     def insert_contact(self, contact: str):
         """Insert a new contact into the contact list.
@@ -856,39 +860,20 @@ class MainApp(tk.Frame):
 
 
 if __name__ == "__main__":
-    DOUBLE = False
+    main = tk.Tk()
+    main.title("ICS 32 Distributed Social Messenger")
+    main.geometry("720x480")
+    main.option_add('*tearOff', False)
 
-    if not DOUBLE:
-        main = tk.Tk()
-        main.title("ICS 32 Distributed Social Messenger")
-        main.geometry("720x480")
-        main.option_add('*tearOff', False)
+    style = ttk.Style()
+    style.theme_use('clam')
 
-        style = ttk.Style()
-        style.theme_use('clam')
+    sv_ttk.set_theme('dark')
 
-        sv_ttk.set_theme('dark')
+    app = MainApp(main)
 
-        app = MainApp(main)
-
-        main.update()
-        main.minsize(main.winfo_width(), main.winfo_height())
-        timer_id = main.after(2000, app.check_new)
-        print(timer_id)
-        main.mainloop()
-
-    else:
-        main1 = tk.Tk()
-        main2 = tk.Tk()
-
-        main1.title("User 1 - ICS 32 Messenger")
-        main2.title("User 2 - ICS 32 Messenger")
-
-        app1 = MainApp(main1)
-        app2 = MainApp(main2)
-
-        main1.after(2000, app1.check_new)
-        main2.after(2000, app2.check_new)
-
-        main1.mainloop()
-        main2.mainloop()
+    main.update()
+    main.minsize(main.winfo_width(), main.winfo_height())
+    timer_id = main.after(2000, app.check_new)
+    print(timer_id)
+    main.mainloop()
